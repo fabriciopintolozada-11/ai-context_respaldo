@@ -17,10 +17,17 @@ Este repositorio es la fuente de verdad de **qué** se construye, **por qué** y
 | Documento | Para qué sirve |
 | --- | --- |
 | [00-contexto-problema.md](00-contexto-problema.md) | Ficha del problema entregada por el docente. Fuente original, no se modifica |
-| [backlog/](backlog/) | User Stories y criterios Gherkin agrupados por épicas, iniciando por `E1` |
+| [backlog/](backlog/) | User Stories y criterios Gherkin agrupados por épicas `E1`, `E2`, `E3` y `E4` |
 | [supuestos.md](supuestos.md) | Registro de supuestos `SUP-xx` y vacíos técnicos pendientes de validación |
 | [preguntas-cliente.md](preguntas-cliente.md) | Banco de preguntas estructurado por los seis escalones para la sesión con el cliente |
 | [registro-respuestas-cliente.md](registro-respuestas-cliente.md) | Registro textual de respuestas y clarificaciones del cliente |
+
+### Épicas
+
+- **E1:** [Recepción, seguimiento y asignación de órdenes de trabajo](backlog/E1-recepcion-seguimiento-y-asignacion-de-ordenes-de-trabajo.md)
+- **E2:** [Presupuestos y Aprobación del Cliente](backlog/E2-presupuestos-y-aprobacion-del-cliente.md)
+- **E3:** [Gestión de Inventario y Almacén](backlog/E3-gestion-de-inventario-y-almacen.md)
+- **E4:** [Seguimiento y Comunicación](backlog/E4-seguimiento-y-comunicacion.md)
 
 ### Constitución técnica — cómo se escribe el código
 

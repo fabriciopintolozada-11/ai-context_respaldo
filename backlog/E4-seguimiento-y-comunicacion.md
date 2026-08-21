@@ -1,8 +1,6 @@
-# E4 — Seguimiento y comunicación
+# Épica E4 — Seguimiento y Comunicación
 
-## Objetivo
-
-Permitir a la Recepcionista y al personal de atención consultar de manera inmediata el avance y estado de cualquier vehículo en el taller, evitando interrupciones a los mecánicos en las bahías y agilizando las respuestas a llamadas o consultas presenciales de los clientes.
+Permite a la Recepcionista y al personal de atención consultar de manera inmediata el avance y estado de cualquier vehículo en el taller, evitando interrupciones a los mecánicos en las bahías y agilizando las respuestas a llamadas o consultas presenciales de los clientes.
 
 ## Origen
 
@@ -52,3 +50,18 @@ Escenario: Búsqueda con debounce sin recargar la página (RN-20)
 - **RN-05:** visibilidad clara de órdenes pausadas con detalle de causales (espera de repuestos o autorizaciones).
 - **Backend:** endpoint `GET /api/v1/work-orders/tracking-summary` con filtros por `licensePlate`, `status` y `workBayId` (`JwtAuthGuard`), DTO `WorkOrderTrackingResponseDto` e índices en BD (`vehicles.license_plate`, `work_orders.status`) con latencia menor a 100 ms.
 - **Frontend:** componente `VehicleStatusQuickSearch.tsx` con debounce (300 ms a 400 ms), tarjeta visual `WorkOrderTrackingCard.tsx` con código de colores por estado, hook `useWorkOrderTracking` con React Query y manejo de estados con Skeletons/Empty State.
+
+### Desglose de tareas técnicas
+
+**Backend (`modules/work-orders`, `modules/vehicles`):**
+
+- **BE-T05.1:** endpoint `GET /api/v1/work-orders/tracking-summary` con filtros por `licensePlate`, `status` y `workBayId`, protegido con `JwtAuthGuard` (BE-22).
+- **BE-T05.2:** `WorkOrderTrackingResponseDto` con OT, estado, ingreso, permanencia, bahía, mecánico y motivo de pausa (BE-12).
+- **BE-T05.3:** índices en `vehicles.license_plate` y `work_orders.status` para latencia menor a 100 ms (BE-21).
+
+**Frontend (`features/work-orders`, `features/vehicles`):**
+
+- **FE-T05.1:** componente `VehicleStatusQuickSearch.tsx` con debounce de 300 ms a 400 ms (FE-15).
+- **FE-T05.2:** tarjeta `WorkOrderTrackingCard.tsx` con colores por estado.
+- **FE-T05.3:** hook `useWorkOrderTracking` con `@tanstack/react-query` y `staleTime` corto (FE-08).
+- **FE-T05.4:** Skeletons y estado vacío explicativo cuando no existe una OT activa (FE-13).

@@ -1,8 +1,6 @@
-# E3 — Gestión de inventario y almacén
+# Épica E3 — Gestión de Inventario y Almacén
 
-## Objetivo
-
-Gestionar el control de repuestos en almacén, garantizando la consistencia del stock físico frente a las reservas, el descuento transaccional al momento de la instalación y la gestión de detenciones por quiebre de stock sin bloquear la productividad del taller.
+Gestiona el flujo de control de repuestos en almacén, garantizando la consistencia del stock físico frente a las reservas, el descuento transaccional al momento de la instalación y la gestión de detenciones por quiebre de stock.
 
 ## Origen
 
@@ -58,6 +56,21 @@ Escenario: Interfaz de mecánico sin exposición de precios (RN-16)
 - **Backend:** `ConsumeSparePartDto`, endpoint `POST /api/v1/work-orders/:id/consume-part` bajo `@Roles(Role.MECHANIC, Role.WORKSHOP_LEAD)`, ejecutado en una transacción atómica para mutar `spare_parts` e insertar en `stock_movements` (kardex).
 - **Frontend:** panel táctil `ReservedPartsPanel.tsx` con botones de acción grandes (`>= 44px`) y hook reactivo `useConsumeSparePart` con React Query.
 
+### Desglose de tareas técnicas
+
+**Backend (`modules/inventory`, `modules/work-orders`):**
+
+- **BE-T07.1:** endpoint `POST /api/v1/work-orders/:id/consume-part` protegido con `@Roles(Role.MECHANIC, Role.WORKSHOP_LEAD)`.
+- **BE-T07.2:** DTO `ConsumeSparePartDto` (`workOrderPartId`, `quantity`, `notes`).
+- **BE-T07.3:** transacción atómica para validar estado, reserva, stock no negativo e insertar el kardex (BE-16, BE-17, BE-19).
+- **BE-T07.4:** `WorkOrderPartResponseDto` omitiendo precios para `MECHANIC` (RN-16, BE-12).
+
+**Frontend (`features/work-orders`, `features/inventory`):**
+
+- **FE-T07.1:** componente táctil `ReservedPartsPanel.tsx` con botones `[ Confirmar Uso ]` de al menos 44 px (FE-14).
+- **FE-T07.2:** hook `useConsumeSparePart` con React Query e invalidación de caché (FE-08, FE-09).
+- **FE-T07.3:** no renderizar precios ni importes en BOB para mecánicos (RN-16, RN-21).
+
 ## US-13: Gestionar espera de repuesto
 
 **Como** Mecánico, **quiero** cambiar una Orden de Trabajo al estado "En Espera de Repuesto" cuando una pieza requerida no esté disponible físicamente en almacén, **para** pausar formalmente la orden, notificar a recepción y quedar liberado para atender otro trabajo asignado.
@@ -95,3 +108,18 @@ Escenario: Registro de inconsistencia de inventario para ajuste posterior
 - **RN-19:** trazabilidad inmutable de la causa de la detención en el historial de la OT.
 - **Backend:** `SetAwaitingPartDto`, endpoint `POST /api/v1/work-orders/:id/awaiting-part`, transición en máquina de estados y log de auditoría.
 - **Frontend:** modal táctil `AwaitingPartModal.tsx`, hook `useSetAwaitingPart`, invalidación del grid de bahías y badge visual ámbar/naranja `[ En Espera de Repuesto ]` (FE-16).
+
+### Desglose de tareas técnicas
+
+**Backend (`modules/work-orders`, `modules/inventory`):**
+
+- **BE-T13.1:** DTO `SetAwaitingPartDto` (`missingPartId`, `reason`).
+- **BE-T13.2:** endpoint `POST /api/v1/work-orders/:id/awaiting-part` validando permisos del mecánico asignado (RN-04).
+- **BE-T13.3:** transición a `EN_ESPERA_DE_REPUESTO` dentro del servicio de estados.
+- **BE-T13.4:** persistir el motivo en el historial de cambios de estado (RN-19, BE-17).
+
+**Frontend (`features/work-orders`, `features/inventory`):**
+
+- **FE-T13.1:** diálogo táctil `AwaitingPartModal.tsx` para pieza faltante y justificación.
+- **FE-T13.2:** hook `useSetAwaitingPart` invalidando OT, tareas del mecánico y grid de las cuatro bahías (FE-09).
+- **FE-T13.3:** badge ámbar/naranja `[ En Espera de Repuesto ]` para tablero y tarjetas de bahía.

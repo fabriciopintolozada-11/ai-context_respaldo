@@ -1,16 +1,10 @@
-# E2 — Presupuestos y aprobación del cliente
+# Épica E2 — Presupuestos y Aprobación del Cliente
 
-## Objetivo
+Gestiona el flujo técnico y administrativo desde que el mecánico inspecciona el vehículo hasta que el cliente autoriza formalmente la intervención, asegurando el cálculo en Bolivianos (BOB) y la reserva de repuestos.
 
-Gestionar el flujo técnico y administrativo desde que el mecánico inspecciona el vehículo hasta que el cliente autoriza formalmente la intervención, asegurando el costeo en Bolivianos (BOB) y la reserva preventiva de repuestos.
+Origen: reglas de negocio de taller automotriz (RN-02, RN-03, RN-04, RN-07, RN-08, RN-16, RN-19, RN-21) sobre transparencia de precios, auditoría técnica, control de repuestos y validación obligatoria del cliente antes de intervenir el vehículo.
 
-## Origen
-
-Reglas de negocio de taller automotriz (RN-02, RN-03, RN-04, RN-07, RN-08, RN-16, RN-19, RN-21) sobre transparencia de precios, auditoría técnica, control de repuestos y validación obligatoria del cliente antes de intervenir el vehículo.
-
-## Prioridad de la épica
-
-**Must** — sin diagnóstico estructurado, costeo formal y autorización expresa del cliente, el taller no puede iniciar labores ni garantizar el control de stock ni la facturación.
+Prioridad de la épica: **Must** — sin diagnóstico estructurado, costeo formal y autorización expresa del cliente, el taller no puede iniciar labores ni garantizar el control de stock ni la facturación.
 
 ## Historias de usuario
 
@@ -53,6 +47,20 @@ Escenario: Detección de fallas adicionales durante una reparación en curso (RN
 - **Backend:** `CreateDiagnosticDto`, endpoint `POST /api/v1/work-orders/:id/diagnostic` y control transaccional de suspensión.
 - **Frontend:** interfaz táctil `DiagnosticForm.tsx` con componentes UI táctiles (`>= 44px`) mediante `react-hook-form` + `zod` e invalidación en React Query.
 
+### Desglose de tareas técnicas
+
+**Backend (`modules/work-orders`, `modules/quotes`):**
+
+- **BE-T11.1:** crear `CreateDiagnosticDto` con `class-validator` (`description`, `suggestedTasks`, `suggestedPartIds`, `estimatedHours`).
+- **BE-T11.2:** endpoint `POST /api/v1/work-orders/:id/diagnostic` validando que la OT pertenece al mecánico (RN-04).
+- **BE-T11.3:** suspensión automática y transición de estado si la OT estaba `en_reparacion` (RN-03).
+
+**Frontend (`features/work-orders`):**
+
+- **FE-T11.1:** pantalla táctil `DiagnosticForm.tsx` con botones de al menos 44 px, sin campos de precio (FE-14, RN-16).
+- **FE-T11.2:** formulario con `react-hook-form` + `zod` (FE-11).
+- **FE-T11.3:** mutación con React Query que invalide el estado de la OT (FE-09).
+
 ## US-12: Generar presupuesto
 
 **Como** Recepcionista, **quiero** estructurar y costear el presupuesto formal en base al diagnóstico técnico del mecánico, **para** comunicar al cliente el costo total y el desglose de trabajos antes de iniciar cualquier labor.
@@ -78,6 +86,20 @@ Escenario: Generación correcta del presupuesto en moneda nacional
 - **RN-21:** manejo estricto de montos monetarios en moneda nacional (BOB) con precisión decimal (`Prisma.Decimal`).
 - **Backend:** DTOs `CreateQuoteDto` y `QuoteResponseDto`, endpoint `POST /api/v1/work-orders/:id/quote` protegido por roles (`RECEPTIONIST`, `WORKSHOP_LEAD`, `ADMIN`).
 - **Frontend:** pantalla `QuoteBuilderPage.tsx` con cálculo reactivo de subtotales, validación numérica positiva con Zod y exportación/resumen para envío vía WhatsApp o formato imprimible.
+
+### Desglose de tareas técnicas
+
+**Backend (`modules/quotes`, `modules/settlements`):**
+
+- **BE-T12.1:** crear `CreateQuoteDto` y `QuoteResponseDto` manejando precios con `Decimal` de Prisma (BE-13, RN-21).
+- **BE-T12.2:** endpoint `POST /api/v1/work-orders/:id/quote` accesible por `RECEPTIONIST`, `WORKSHOP_LEAD` y `ADMIN`.
+- **BE-T12.3:** transición de la máquina de estados de la OT a `PRESUPUESTO_ENVIADO`.
+
+**Frontend (`features/quotes`):**
+
+- **FE-T12.1:** vista `QuoteBuilderPage.tsx` con desglose, selector de repuestos y cálculo dinámico de subtotales y total en BOB.
+- **FE-T12.2:** resumen imprimible o compartible para envío por WhatsApp/teléfono al cliente.
+- **FE-T12.3:** validación de campos numéricos positivos con Zod (FE-11).
 
 ## US-09: Registrar aprobación o rechazo del presupuesto
 
@@ -111,3 +133,17 @@ Escenario: Rechazo del presupuesto por parte del cliente
 - **RN-07 / RN-08:** distinción estricta entre stock disponible, stock reservado y stock físico.
 - **Backend:** endpoints `POST /api/v1/work-orders/:id/approve-quote` y `POST /api/v1/work-orders/:id/reject-quote`, ejecutados bajo una transacción atómica para consistencia entre auditoría, inventario y OT.
 - **Frontend:** `QuoteApprovalModal.tsx` con captura de canal y notas, badge reactivo de estado (`[ APROBADO ]` / `[ RECHAZADO ]`) e invalidación de caché en el panel de bahías y stock.
+
+### Desglose de tareas técnicas
+
+**Backend (`modules/quotes`, `modules/inventory`, `modules/work-orders`):**
+
+- **BE-T09.1:** crear `ApproveQuoteDto` y `RejectQuoteDto` con medio de aprobación, nombre, notas y motivo de rechazo.
+- **BE-T09.2:** implementar los endpoints `approve-quote` y `reject-quote`.
+- **BE-T09.3:** ejecutar en una transacción atómica el log auditable, cambio a `APROBADO` y marcado de repuestos como `RESERVED` (BE-16, BE-19, RN-07).
+
+**Frontend (`features/quotes`, `features/work-orders`):**
+
+- **FE-T09.1:** modal `QuoteApprovalModal.tsx` con selector de medio y campo de notas.
+- **FE-T09.2:** mutación React Query que invalide OT, bahías e inventario (FE-09).
+- **FE-T09.3:** badge `[ APROBADO ]` o `[ RECHAZADO ]` en el tablero principal.
