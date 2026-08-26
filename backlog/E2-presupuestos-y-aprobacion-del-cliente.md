@@ -4,15 +4,90 @@ Gestiona el flujo técnico y administrativo desde que el mecánico inspecciona e
 
 Origen: reglas de negocio de taller automotriz (RN-02, RN-03, RN-04, RN-07, RN-08, RN-16, RN-19, RN-21) sobre transparencia de precios, auditoría técnica, control de repuestos y validación obligatoria del cliente antes de intervenir el vehículo.
 
-Prioridad de la épica: **Must** — sin diagnóstico estructurado, costeo formal y autorización expresa del cliente, el taller no puede iniciar labores ni garantizar el control de stock ni la facturación.
+
 
 ## Historias de usuario
 
 | ID | Título | Prioridad | Puntos |
 | --- | --- | --- | --- |
+| US-00 | Autenticación, control de acceso y navegación por roles | Must | 5 |
 | US-11 | Registrar diagnóstico técnico | Must | 5 |
 | US-12 | Generar presupuesto | Must | 3 |
 | US-09 | Registrar aprobación o rechazo del presupuesto | Must | 5 |
+
+## US-00: Autenticación, control de acceso y navegación por roles
+
+**Como** Usuario del taller (Recepcionista, Mecánico, Jefe de Taller, Administrador), **quiero** autenticarme en el sistema con mis credenciales personales y ser dirigido automáticamente a mi espacio de trabajo correspondiente, **para** interactuar únicamente con los módulos, datos y acciones autorizadas para mi rol conforme a las políticas del taller (RN-04, RN-14, RN-15, RN-16).
+
+| Prioridad | Puntos | Rol | Depende de |
+| --- | --- | --- | --- |
+| Must | 5 | Recepcionista, Mecánico, Jefe de Taller, Administrador | Usuarios y roles configurados |
+
+### Criterios de aceptación
+
+```gherkin
+Scenario: Inicio de sesión exitoso y redirección según rol
+  Given que el usuario se encuentra en la pantalla de inicio de sesión
+  When ingresa su nombre de usuario/correo y contraseña correctos
+  Then el sistema valida la identidad y emite un par de tokens JWT (access token y refresh token)
+  And redirige al usuario a su panel inicial:
+    | Rol | Vista Inicial Redirigida |
+    | RECEPTIONIST | /work-orders (Listado general y recepción) |
+    | MECHANIC | /my-work-orders (OTs asignadas exclusivamente) |
+    | WORKSHOP_LEAD | /workshop-bays (Monitoreo de 4 bahías y OTs) |
+    | ADMIN | /dashboard (Métricas y administración) |
+
+Scenario: Credenciales inválidas
+  Given que el usuario intenta iniciar sesión
+  When ingresa una contraseña incorrecta o un usuario inactivo/inexistente
+  Then el sistema retorna un error 401 Unauthorized
+  And la interfaz muestra el mensaje descriptivo: "Credenciales de acceso incorrectas o usuario inactivo" (FE-12).
+
+Scenario: Restricción estricta de navegación por rol en frontend (RBAC UI)
+  Given que un usuario autenticado con rol "MECHANIC" intenta ingresar por URL directa a "/pricing" o "/workshop-bays"
+  When se evalúa la ruta en el cliente
+  Then el router bloquea el acceso y lo redirige a "/my-work-orders"
+  And la interfaz no renderiza menús, botones de precios ni opciones de asignación de bahías (RN-14, RN-16).
+
+Scenario: Control de autorización estricto en backend (RBAC API)
+  Given que un usuario autenticado con rol "MECHANIC" o "RECEPTIONIST" envía una petición HTTP directa a un endpoint restringido (ej. aplicar descuento o asignar mecánico)
+  When el backend procesa el request
+  Then el RolesGuard rechaza la petición con un error 403 Forbidden
+  And no ejecuta ninguna mutación en base de datos (RN-14, RN-15).
+
+Scenario: Cierre de sesión y revocación de acceso
+  Given que el usuario tiene una sesión activa
+  When presiona el botón "Cerrar Sesión"
+  Then el sistema elimina los tokens almacenados en el cliente
+  And redirige inmediatamente a la pantalla de login "/login".
+```
+
+### Reglas de negocio y consideraciones técnicas asociadas
+
+- **RN-04, RN-14, RN-15 y RN-16:** autenticación individual, acceso mínimo por rol, autorización en backend y omisión de precios para `MECHANIC`.
+- **Backend:** `AuthModule`, `modules/users`, `common/guards`, JWT con access/refresh token, `JwtAuthGuard` global, `RolesGuard`, `@Roles(...)` y `@CurrentUser()`.
+- **Frontend:** `LoginPage.tsx`, `AuthContext`/`useAuth`, cliente HTTP centralizado con interceptores, `RoleBasedRoute.tsx` y navegación por rol.
+
+### Desglose de tareas técnicas
+
+**Backend (`modules/auth`, `modules/users`, `common/guards`):**
+
+- **BE-T00.1:** modelar y poblar roles en Prisma (`RECEPTIONIST`, `MECHANIC`, `WORKSHOP_LEAD`, `ADMIN`) y tabla `users` con borrado lógico (`isActive: Boolean`).
+- **BE-T00.2:** implementar hashing seguro de contraseñas usando Argon2 o bcrypt (BE-28).
+- **BE-T00.3:** crear `LoginDto` y `AuthResponseDto` validados con `class-validator`.
+- **BE-T00.4:** crear `AuthModule` con `POST /api/v1/auth/login` público mediante `@Public()`, `POST /api/v1/auth/refresh` y `GET /api/v1/auth/profile` mediante `@CurrentUser()`.
+- **BE-T00.5:** implementar `JwtAuthGuard` global y `RolesGuard`, complementados con `@Roles(...)` (BE-29).
+- **BE-T00.6:** omitir sistemáticamente importes y precios en respuestas destinadas al rol `MECHANIC` (RN-16, BE-12).
+- **BE-T00.7:** escribir tests unitarios y e2e con Jest/Supertest para login, credenciales inválidas y rechazo `403 Forbidden` (BE-31, BE-32).
+
+**Frontend (`features/auth`, `shared/api`, `app/router`):**
+
+- **FE-T00.1:** diseñar `LoginPage.tsx` en modo oscuro con soporte responsivo para tablets y desktop (FE-14).
+- **FE-T00.2:** crear el formulario con `react-hook-form` + Zod (`loginSchema`) y validación en tiempo real (FE-11, FE-12).
+- **FE-T00.3:** configurar `src/shared/api/httpClient.ts` con interceptores para `Authorization: Bearer <token>`, refresco de sesión y redirección a `/login` ante `401` (FE-03).
+- **FE-T00.4:** crear `useAuth` y `AuthContext` o un store mínimo con Zustand para sesión, usuario activo y rol (FE-10).
+- **FE-T00.5:** implementar `RoleBasedRoute.tsx`, restringir accesos directos y ocultar navegación no permitida, incluyendo bahías/asignación para no-jefes y precios/totales para `MECHANIC` (RN-14, RN-16, FE-18).
+- **FE-T00.6:** crear pruebas con Vitest, Testing Library y MSW para login y restricciones de interfaz (FE-20, FE-21).
 
 ## US-11: Registrar diagnóstico técnico
 
