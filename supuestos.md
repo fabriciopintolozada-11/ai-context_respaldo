@@ -26,7 +26,7 @@
 
 | Riesgo | Estado | Épicas / Módulos afectados | Pregunta vinculada |
 |---|---|---|---|
-| 🔴 Alto | **Confirmado** (2026-08-18) | E1 / `inventory`, `WorkOrderPart` | [P-05](preguntas-cliente.md#p-05), [P-06](preguntas-cliente.md#p-06) |
+| 🔴 Alto | **Confirmado** (2026-08-18) | E2 / E3 / `inventory`, `WorkOrderPart` | [P-05](preguntas-cliente.md#p-05), [P-06](preguntas-cliente.md#p-06) |
 
 > **Evidencia:** Se confirmó que existe un único almacén con aproximadamente 300 repuestos donde las piezas se reservan con el presupuesto aprobado (`RN-07`) y se descuentan físicamente al confirmar su instalación (`RN-08`, `RN-09`).
 
@@ -44,7 +44,7 @@
 
 | Riesgo | Estado | Épicas / Módulos afectados | Pregunta vinculada |
 |---|---|---|---|
-| 🔴 Alto | **Confirmado** (2026-08-18) | E1 / `work-orders`, `inventory` | [P-13](preguntas-cliente.md#p-13) |
+| 🔴 Alto | **Confirmado** (2026-08-18) | E3 / `work-orders`, `inventory` | [P-13](preguntas-cliente.md#p-13) |
 
 > **Evidencia:** Ante descuadre de stock o piezas faltantes la orden pasa a espera y se genera un ajuste de inventario con motivo.
 
@@ -116,7 +116,7 @@
 
 | Riesgo | Estado | Épicas / Módulos afectados | Pregunta vinculada |
 |---|---|---|---|
-| 🟢 Bajo | **Confirmado** (2026-08-18) | E1 / `inventory`, Alertas | [P-21](preguntas-cliente.md#p-21) |
+| 🟢 Bajo | **Confirmado** (2026-08-18) | E3 / `inventory`, Alertas | [P-21](preguntas-cliente.md#p-21) |
 
 > **Evidencia:** El cliente pidió identificar qué repuestos se mueven y cuáles llevan meses en el estante. El umbral de 2 meses queda formalizado como supuesto operativo.
 
